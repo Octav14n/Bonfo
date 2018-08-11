@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Bonfo</string>
+    <string name="title_book_detail">Book Detail</string>
+    <string name="search">Search</string>
+    <string name="settings">Settings</string>
+    <string name="author">by %s</string>
+
+    <!-- Strings related to Settings -->
+    <string name="title_activity_settings">Settings</string>
+    <string name="pick_diretories">Source directories</string>
+    <string name="choose_directory">Choose Directory</string>
+    <string name="hide_small_files">Hide small files</string>
+</resources>

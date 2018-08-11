@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:orientation="vertical"
+              android:layout_margin="@dimen/text_margin"
+              android:layout_marginBottom="0dp"
+              android:background="@color/colorPrimaryDark">
+    <!--<View android:id="@+id/divider2"
+          android:layout_width="match_parent"
+          android:layout_height="1dp"
+          android:background="?android:attr/listDivider"/>-->
+    <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/text_margin">
+        <TextView
+                android:id="@+id/header"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceListItem" tools:text="Header"
+                android:paddingBottom="@dimen/text_margin"/>
+        <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" android:paddingStart="@dimen/text_margin"
+                android:paddingEnd="0dp">
+            <TextView
+                    android:id="@+id/author"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    tools:text="by Simon"
+                    android:layout_weight="1" android:textAppearance="@style/TextAppearance.AppCompat"/>
+            <TextView
+                    android:id="@+id/body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    tools:text="Suscipit voluptate pariatur error. Minima officia distinctio magni. Distinctio occaecati sequi quis cupiditate nisi placeat error. Et ea magni impedit delectus. Et illum quo laudantium voluptatem autem vel."
+                    android:textAppearance="@style/TextAppearance.AppCompat.Body1" android:textColor="@color/body1"/>
+            <TextView
+                    android:id="@+id/characters"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    tools:text="Character1, Char2, Character3"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Body1" android:textColor="@color/characters"
+                    android:layout_weight="1"/>
+            <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+                <TextView
+                        android:id="@+id/genres"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        tools:text="Fantasy, Trash, Sci-Fi"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Body1" android:textColor="@color/genres"
+                        android:layout_weight="1"/>
+                <Space
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" android:layout_weight="1"/>
+                <TextView
+                        android:id="@+id/size"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        tools:text="2.5 MB"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Body1" android:textColor="@color/body1"
+                />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
