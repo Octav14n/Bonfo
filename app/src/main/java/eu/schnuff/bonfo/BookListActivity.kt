@@ -47,6 +47,7 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Setting.load(applicationContext)
         StrictMode::class.java.getMethod("disableDeathOnFileUriExposure").invoke(null)
         setContentView(R.layout.activity_book_list)
 
@@ -60,7 +61,6 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
             // activity should be in two-pane mode.
             twoPane = true
         }
-        Setting.load(applicationContext)
         setupEPubList()
         setupRecyclerView(book_list)
         RFastScroller(book_list, Color.WHITE, Color.GRAY)
@@ -120,6 +120,7 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
     }
 
     private fun setupEPubList() {
+        EPubContent.filterLarge = Setting.filterLargeFiles
         EPubContent.onListChanged = {
             runOnUiThread {
                 book_list.adapter.notifyDataSetChanged()
