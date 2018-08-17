@@ -198,7 +198,7 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = EPubContent.ITEMS[position]
-            val highlighting = EPubContent.filter
+            val highlighting = EPubContent.filter.split(' ').filter { it.length >= HIGHLIGHT_MIN }
             with(holder) {
 
                 header.setHighlightedText(item.name, highlighting)
@@ -216,7 +216,7 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
             }
         }
 
-        private fun TextView.setHighlightedText(text: String?, highlighting: String, formattedBy: Int? = null) {
+        private fun TextView.setHighlightedText(text: String?, highlighting: Collection<String>, formattedBy: Int? = null) {
             if (text.isNullOrEmpty()) {
                 this.visibility = View.GONE
             } else {
@@ -226,7 +226,7 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
                 this.text = Html.fromHtml(formatted, Html.FROM_HTML_MODE_COMPACT)
             }
         }
-        private fun TextView.setHighlightedText(texts: Array<String>, highlighting: String, formattedBy: Int? = null) {
+        private fun TextView.setHighlightedText(texts: Array<String>, highlighting: Collection<String>, formattedBy: Int? = null) {
             if (texts.isEmpty()) {
                 this.visibility = View.GONE
             } else {
@@ -237,14 +237,19 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
             }
         }
 
-        private fun highlight(item: String?, highlighting: String) : String {
+        private fun highlight(item: String?, highlighting: Collection<String>) : String {
             return when {
                 item === null -> ""
-                highlighting.length > HIGHLIGHT_MIN -> item.replace("($highlighting)".toRegex(RegexOption.IGNORE_CASE), HIGHLIGHT)
+                highlighting.isNotEmpty() -> {
+                    highlighting.foldIndexed(item) { myI, acc, highlight ->
+                        val i = myI % HIGHLIGHT_COLOR.size
+                        acc.replace("($highlight)".toRegex(RegexOption.IGNORE_CASE), HIGHLIGHT.format(HIGHLIGHT_COLOR[i]))
+                    }
+                }
                 else -> item
             }
         }
-        private fun highlight(items: Array<String>, highlighting: String) : String =
+        private fun highlight(items: Array<String>, highlighting: Collection<String>) : String =
                 items.joinToString { s -> highlight(s, highlighting) }
 
         override fun getItemCount() = EPubContent.ITEMS.size
@@ -262,7 +267,8 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
     companion object {
         const val PERMISSION_SDCARD = 1
         const val SAVED_FILTER = "filter"
-        const val HIGHLIGHT = "<font color='#FFCC00'>$1</font>"
+        const val HIGHLIGHT = "<font color='%s'>$1</font>"
+        val HIGHLIGHT_COLOR = arrayOf("#FFCC00", "#CCFF00", "#FF00CC", "#CC00FF")
         const val HIGHLIGHT_MIN = 2
     }
 }

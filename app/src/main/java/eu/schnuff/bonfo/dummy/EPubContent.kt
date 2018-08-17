@@ -65,11 +65,13 @@ object EPubContent {
         }
 
     private fun applyFilter(value: String? = null, largeFilesOnly: Boolean? = null) {
-        val filter = value ?: filter
+        val filters = (value ?: filter).split(' ')
         var filtered: List<EPubItem> = items_original
         if (largeFilesOnly ?: filterLarge)
             filtered = filtered.filter { it.fileSize > LARGE_FILE_MIN_SIZE }
-        filtered = if (filter.isEmpty()) filtered else items_original.filter { item -> item.contains(filter) }
+        if (!filters.isEmpty()) {
+            filtered = filtered.filter { item -> filters.all { filter -> filter.isEmpty() || item.contains(filter) } }
+        }
         ITEMS = filtered
     }
 
