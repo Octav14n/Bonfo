@@ -199,9 +199,8 @@ object EPubContent {
         override fun toString(): String = name
 
         fun contains(str: String): Boolean {
-            if (title.contains(str, true)) return true
+            if (name.contains(str, true)) return true
             if (author?.contains(str, true) == true) return true
-            if (fandom?.contains(str, true) == true) return true
             if (description?.contains(str, true) == true) return true
             if (genres.any { s -> s.contains(str, true) }) return true
             if (characters.any { s -> s.contains(str, true) }) return true
