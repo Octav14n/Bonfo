@@ -18,6 +18,7 @@ import android.view.*
 import android.widget.SearchView
 import android.widget.TextView
 import eu.schnuff.bonfo.dummy.EPubContent
+import eu.schnuff.bonfo.dummy.EPubItem
 import eu.schnuff.bonfo.dummy.Setting
 import eu.schnuff.bonfo.helpers.RFastScroller
 import kotlinx.android.synthetic.main.activity_book_list.*
@@ -127,7 +128,10 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
             }
         }
         if (EPubContent.ITEMS.isEmpty()) {
-            readEPubsForList()
+            book_list_refresh!!.isRefreshing = true
+            EPubContent.loadItems(applicationContext) {
+                book_list_refresh!!.isRefreshing = false
+            }
         }
     }
 
@@ -138,7 +142,7 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
                     PERMISSION_SDCARD)
         } else {
             book_list_refresh!!.isRefreshing = true
-            EPubContent.readItems {
+            EPubContent.readItems(applicationContext) {
                 book_list_refresh!!.isRefreshing = false
             }
         }
@@ -159,7 +163,7 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
 
         init {
             onLongClickListener = View.OnLongClickListener { v ->
-                val item = v.tag as EPubContent.EPubItem
+                val item = v.tag as EPubItem
                 if (twoPane) {
                     val fragment = BookDetailFragment().apply {
                         arguments = Bundle().apply {
@@ -176,7 +180,7 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
                 true
             }
             onClickListener = View.OnClickListener {
-                val item = it.tag as EPubContent.EPubItem
+                val item = it.tag as EPubItem
                 val intent = Intent(Intent.ACTION_VIEW)
                         .newTask()
                         .setDataAndType(Uri.fromFile(File(item.filePath)), "application/epub+zip")

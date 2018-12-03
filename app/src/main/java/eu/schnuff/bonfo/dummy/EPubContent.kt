@@ -1,5 +1,6 @@
 package eu.schnuff.bonfo.dummy
 
+import android.content.Context
 import org.jetbrains.anko.doAsync
 import org.w3c.dom.Element
 import java.io.File
@@ -41,11 +42,6 @@ object EPubContent {
             field = value
             onListChanged()
         }
-
-    /**
-     * A map of EPubItems by file-path.
-     */
-    val ITEM_MAP: MutableMap<String, EPubItem> = HashMap()
     var onListChanged: () -> Unit = {}
 
     var filter = ""
@@ -75,41 +71,65 @@ object EPubContent {
         ITEMS = filtered
     }
 
-    fun readItems(onComplete: () -> Unit) {
+    operator fun get(filePath: String): EPubItem? {
+        return items_original.find { it.filePath == filePath }
+    }
+
+    fun readItems(context: Context, onComplete: () -> Unit) {
         doAsync {
             /*onComplete {
                 onComplete()
             }*/
+            val itemFilePath: MutableMap<String, EPubItem> = HashMap()
+            items_original.forEach {
+                itemFilePath[it.filePath] = it
+            }
+
+            val dao = PersistenceHelper.epub_items(context).ePubItemDao()
             val list = LinkedList<EPubItem>()
             Setting.watchedDirectory.forEach {
                 val dir = File(it)
                 val files = dir.listFiles { _, name -> name.endsWith(".epub") }
                 val countDownLatch = CountDownLatch(files.size)
                 files.forEach { file ->
-                    //doAsync {
-                    readEPub(file, ITEM_MAP[file.absolutePath])?.run { list.add(this) }
+                    readEPub(file, itemFilePath.remove(file.absolutePath), dao)?.run { list.add(this) }
                     countDownLatch.countDown()
-                    //}
                 }
                 countDownLatch.await()
             }
             list.sortWith(compareByDescending(EPubItem::modified))
 
+            // Remove deleted items.
+            itemFilePath.values.forEach {
+                dao.delete(it)
+            }
+
             // Populate read items.
-            items_original.clear()
-            ITEM_MAP.clear()
-            list.forEach { addItem(it) }
-            applyFilter()
+            setItems(list)
+            onComplete()
+        }
+    }
+
+    private fun setItems(items: List<EPubItem>) {
+        items_original.clear()
+        items.forEach { addItem(it) }
+        applyFilter()
+    }
+
+    fun loadItems(context: Context, onComplete: () -> Unit) {
+        doAsync {
+            val db = PersistenceHelper.epub_items(context)
+            val items = db.ePubItemDao().getAll()
+            setItems(items)
             onComplete()
         }
     }
 
     private fun addItem(item: EPubItem) {
         items_original.add(item)
-        ITEM_MAP[item.filePath] = item
     }
 
-    private fun readEPub(file: File, other: EPubItem?): EPubItem? {
+    private fun readEPub(file: File, other: EPubItem?, dao: EPubItemDAO): EPubItem? {
         ZipFile(file).use { epub ->
             val opfEntry = epub.getEntry(OPF_FILE_PATH)
             if (opfEntry === null)
@@ -154,97 +174,15 @@ object EPubContent {
                         }
                     }
                 }
-                return EPubItem(file.absolutePath, file.name, Date(file.lastModified()), file.length(), opfEntry.crc,
+                val item = EPubItem(file.absolutePath, file.name, Date(file.lastModified()), file.length(), opfEntry.crc,
                         url, title, author, fandom, description, genres.toTypedArray(), characters.toTypedArray())
+                if (other != null) {
+                    dao.update(item)
+                } else {
+                    dao.insert(item)
+                }
+                return item
             }
-        }
-    }
-
-    /**
-     * A dummy item representing a piece of title.
-     */
-    data class EPubItem(
-            val filePath: String,
-            val fileName: String,
-            val modified: Date,
-            val fileSize: Long,
-            val opfCrc: Long,
-            val url: String,
-            val title: String,
-            val author: String?,
-            val fandom: String?,
-            val description: String?,
-            val genres: Array<String>,
-            val characters: Array<String>
-    ) {
-        val size: String
-
-        init {
-            val b = fileSize
-            val k = b / 1024.0
-            val m = k / 1024.0
-            val g = m / 1024.0
-            val t = g / 1024.0
-
-            size = when {
-                t > 1 -> "%.2f TB".format(t)
-                g > 1 -> "%.2f GB".format(g)
-                m > 1 -> "%.2f MB".format(m)
-                k > 1 -> "%.2f KB".format(k)
-                else -> "%.2f Bytes".format(b)
-            }
-        }
-
-        val name get() = if (fandom !== null) "$fandom - $title" else fileName
-        override fun toString(): String = name
-
-        fun contains(str: String): Boolean {
-            if (name.contains(str, true)) return true
-            if (author?.contains(str, true) == true) return true
-            if (description?.contains(str, true) == true) return true
-            if (genres.any { s -> s.contains(str, true) }) return true
-            if (characters.any { s -> s.contains(str, true) }) return true
-            return false
-        }
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as EPubItem
-
-            if (filePath != other.filePath) return false
-            if (fileName != other.fileName) return false
-            if (modified != other.modified) return false
-            if (fileSize != other.fileSize) return false
-            if (opfCrc != other.opfCrc) return false
-            if (url != other.url) return false
-            if (title != other.title) return false
-            if (author != other.author) return false
-            if (fandom != other.fandom) return false
-            if (description != other.description) return false
-            if (!Arrays.equals(genres, other.genres)) return false
-            if (!Arrays.equals(characters, other.characters)) return false
-            if (size != other.size) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = filePath.hashCode()
-            result = 31 * result + fileName.hashCode()
-            result = 31 * result + modified.hashCode()
-            result = 31 * result + fileSize.hashCode()
-            result = 31 * result + opfCrc.hashCode()
-            result = 31 * result + url.hashCode()
-            result = 31 * result + title.hashCode()
-            result = 31 * result + (author?.hashCode() ?: 0)
-            result = 31 * result + (fandom?.hashCode() ?: 0)
-            result = 31 * result + (description?.hashCode() ?: 0)
-            result = 31 * result + Arrays.hashCode(genres)
-            result = 31 * result + Arrays.hashCode(characters)
-            result = 31 * result + size.hashCode()
-            return result
         }
     }
 }

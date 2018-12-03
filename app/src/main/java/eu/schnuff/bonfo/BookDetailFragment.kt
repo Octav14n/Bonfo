@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import eu.schnuff.bonfo.dummy.EPubContent
+import eu.schnuff.bonfo.dummy.EPubItem
 import kotlinx.android.synthetic.main.activity_book_detail.*
 import kotlinx.android.synthetic.main.book_detail.view.*
 
@@ -20,7 +21,7 @@ class BookDetailFragment : Fragment() {
     /**
      * The dummy title this fragment is presenting.
      */
-    private var item: EPubContent.EPubItem? = null
+    private var item: EPubItem? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,7 +31,7 @@ class BookDetailFragment : Fragment() {
                 // Load the dummy title specified by the fragment
                 // arguments. In a real-world scenario, use a Loader
                 // to load title from a title provider.
-                item = EPubContent.ITEM_MAP[it.getString(ARG_ITEM_ID)]
+                item = EPubContent[it.getString(ARG_ITEM_ID)]
                 activity?.toolbar_layout?.title = item?.title
             }
         }
