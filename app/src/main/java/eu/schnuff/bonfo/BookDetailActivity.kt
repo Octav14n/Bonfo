@@ -2,8 +2,9 @@ package eu.schnuff.bonfo
 
 import android.content.Intent
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
 import android.view.MenuItem
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import kotlinx.android.synthetic.main.activity_book_detail.*
 
 /**
@@ -35,7 +36,7 @@ class BookDetailActivity : AppCompatActivity() {
             // Create the detail fragment and add it to the activity
             // using a fragment transaction.
             val fragment = BookDetailFragment().apply {
-                arguments = Bundle().apply {
+                Bundle().apply {
                     putString(BookDetailFragment.ARG_ITEM_ID,
                             intent.getStringExtra(BookDetailFragment.ARG_ITEM_ID))
                 }

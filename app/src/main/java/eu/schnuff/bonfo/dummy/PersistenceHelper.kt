@@ -1,7 +1,7 @@
 package eu.schnuff.bonfo.dummy
 
-import android.arch.persistence.room.Room
 import android.content.Context
+import androidx.room.Room
 
 object PersistenceHelper {
     private var appDatabase: AppDatabase? = null

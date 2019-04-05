@@ -4,9 +4,9 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.graphics.Canvas
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
 import android.view.MotionEvent
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -80,7 +80,7 @@ class RFastScroller(private val rv: RecyclerView,
                 computeScroll()
             }
         })
-        rv.adapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
+        rv.adapter!!.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
             private fun update(){
                 needRecompute = true
             }
@@ -145,7 +145,7 @@ class RFastScroller(private val rv: RecyclerView,
         rv.postDelayed(hideRunnable, delay.toLong())
     }
 
-    override fun onDrawOver(canvas: Canvas, parent: RecyclerView, st: RecyclerView.State?) {
+    override fun onDrawOver(canvas: Canvas, parent: RecyclerView, st: RecyclerView.State) {
         if (rvWidth != rv.width || rvHeight != rv.height) {
             rvWidth = rv.width
             rvHeight = rv.height
@@ -244,7 +244,7 @@ class RFastScroller(private val rv: RecyclerView,
     private fun scrollItems(ratio: Float){
         val topI = layoutManager.findFirstVisibleItemPosition()
         val visRange = layoutManager.findLastVisibleItemPosition() + 1 - topI
-        val posRange = rv.adapter.itemCount - visRange
+        val posRange = rv.adapter!!.itemCount - visRange
         val d = (posRange * ratio).roundToInt()
         layoutManager.scrollToPositionWithOffset(topI + d, 0)
     }

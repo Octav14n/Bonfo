@@ -1,6 +1,6 @@
 package eu.schnuff.bonfo.dummy
 
-import android.arch.persistence.room.TypeConverter
+import androidx.room.TypeConverter
 import org.json.JSONArray
 import java.util.*
 

@@ -1,6 +1,6 @@
 package eu.schnuff.bonfo.dummy
 
-import android.arch.persistence.room.*
+import androidx.room.*
 
 @Dao
 interface EPubItemDAO {

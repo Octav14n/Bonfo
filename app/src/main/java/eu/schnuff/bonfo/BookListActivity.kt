@@ -9,14 +9,16 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.PersistableBundle
 import android.os.StrictMode
-import android.support.v4.app.ActivityCompat
-import android.support.v4.content.ContextCompat
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.RecyclerView
 import android.text.Html
+import android.util.Log
 import android.view.*
 import android.widget.SearchView
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.RecyclerView
 import eu.schnuff.bonfo.dummy.EPubContent
 import eu.schnuff.bonfo.dummy.EPubItem
 import eu.schnuff.bonfo.dummy.Setting
@@ -24,6 +26,7 @@ import eu.schnuff.bonfo.helpers.RFastScroller
 import kotlinx.android.synthetic.main.activity_book_list.*
 import kotlinx.android.synthetic.main.book_list.*
 import kotlinx.android.synthetic.main.book_list_content.view.*
+import kotlinx.android.synthetic.main.preference_dir_lister.view.*
 import org.jetbrains.anko.newTask
 import org.jetbrains.anko.startActivity
 import org.jetbrains.anko.toast
@@ -65,6 +68,12 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
         setupEPubList()
         setupRecyclerView(book_list)
         RFastScroller(book_list, Color.WHITE, Color.GRAY)
+
+        /*if (savedInstanceState != null) {
+            this.restoreState(savedInstanceState)
+        } else {
+            Log.i("instance_state", "no state to restore found.")
+        }*/
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -88,16 +97,23 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
         return true
     }
 
-    override fun onRestoreInstanceState(savedInstanceState: Bundle?, savedPersistentState: PersistableBundle?) {
+    override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
         super.onRestoreInstanceState(savedInstanceState)
-        savedPersistentState?.run {
-            EPubContent.filter = getString(SAVED_FILTER)
+        this.restoreState(savedInstanceState)
+    }
+
+    private fun restoreState(savedInstanceState: Bundle?) {
+        savedInstanceState?.run {
+            val filter = getString(SAVED_FILTER)!!
+            Log.i("instance_state", "filter restore is: '%s'".format(filter))
+            EPubContent.filter = filter
         }
     }
 
-    override fun onSaveInstanceState(outState: Bundle?, outPersistentState: PersistableBundle?) {
-        super.onSaveInstanceState(outState, outPersistentState)
-        outPersistentState?.putString(SAVED_FILTER, EPubContent.filter)
+    override fun onSaveInstanceState(outState: Bundle?) {
+        super.onSaveInstanceState(outState)
+        outState?.putString(SAVED_FILTER, EPubContent.filter)
+        Log.i("instance_state", "filter save is: '%s'".format(EPubContent.filter))
     }
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
@@ -124,7 +140,7 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
         EPubContent.filterLarge = Setting.filterLargeFiles
         EPubContent.onListChanged = {
             runOnUiThread {
-                book_list.adapter.notifyDataSetChanged()
+                book_list.adapter!!.notifyDataSetChanged()
             }
         }
         if (EPubContent.ITEMS.isEmpty()) {
