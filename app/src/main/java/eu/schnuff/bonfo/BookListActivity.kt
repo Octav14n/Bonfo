@@ -7,7 +7,6 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
-import android.os.PersistableBundle
 import android.os.StrictMode
 import android.text.Html
 import android.util.Log
@@ -15,7 +14,6 @@ import android.view.*
 import android.widget.SearchView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
@@ -26,7 +24,6 @@ import eu.schnuff.bonfo.helpers.RFastScroller
 import kotlinx.android.synthetic.main.activity_book_list.*
 import kotlinx.android.synthetic.main.book_list.*
 import kotlinx.android.synthetic.main.book_list_content.view.*
-import kotlinx.android.synthetic.main.preference_dir_lister.view.*
 import org.jetbrains.anko.newTask
 import org.jetbrains.anko.startActivity
 import org.jetbrains.anko.toast
