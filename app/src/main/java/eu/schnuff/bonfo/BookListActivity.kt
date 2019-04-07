@@ -2,6 +2,7 @@ package eu.schnuff.bonfo
 
 import android.Manifest
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -16,6 +17,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import eu.schnuff.bonfo.dummy.EPubContent
 import eu.schnuff.bonfo.dummy.EPubItem
@@ -24,6 +26,7 @@ import eu.schnuff.bonfo.helpers.RFastScroller
 import kotlinx.android.synthetic.main.activity_book_list.*
 import kotlinx.android.synthetic.main.book_list.*
 import kotlinx.android.synthetic.main.book_list_content.view.*
+import org.jetbrains.anko.apply
 import org.jetbrains.anko.newTask
 import org.jetbrains.anko.startActivity
 import org.jetbrains.anko.toast
@@ -45,6 +48,8 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
      * device.
      */
     private var twoPane: Boolean = false
+    private var firstItemIdx = 0
+    private var firstItemOffset = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,19 +71,22 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
         setupRecyclerView(book_list)
         RFastScroller(book_list, Color.WHITE, Color.GRAY)
 
-        /*if (savedInstanceState != null) {
-            this.restoreState(savedInstanceState)
-        } else {
-            Log.i("instance_state", "no state to restore found.")
-        }*/
+        if (savedInstanceState == null) {
+            val pref = this.getSharedPreferences(SETTING_UI_NAME, Context.MODE_PRIVATE)
+            EPubContent.filter = pref.getString(SAVED_FILTER, "")!!
+            firstItemIdx = pref.getInt(SAVED_SCROLL, 0)
+            firstItemOffset = pref.getInt(SAVED_SCROLL_OFFSET, 0)
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         super.onCreateOptionsMenu(menu)
         menuInflater.inflate(R.menu.activity_book_list_menu, menu)
-        val searchView = menu!!.findItem(R.id.app_bar_search).actionView as SearchView
+        val searchAction = menu!!.findItem(R.id.app_bar_search)
+        val searchView = searchAction.actionView as SearchView
         if (EPubContent.filter.isNotEmpty()) {
             searchView.setQuery(EPubContent.filter, false)
+            searchView.isIconified = false
             searchView.clearFocus()
         }
         searchView.setOnQueryTextListener(object: SearchView.OnQueryTextListener {
@@ -94,23 +102,19 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
         return true
     }
 
-    override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
-        super.onRestoreInstanceState(savedInstanceState)
-        this.restoreState(savedInstanceState)
-    }
-
-    private fun restoreState(savedInstanceState: Bundle?) {
-        savedInstanceState?.run {
-            val filter = getString(SAVED_FILTER)!!
-            Log.i("instance_state", "filter restore is: '%s'".format(filter))
-            EPubContent.filter = filter
+    override fun onStop() {
+        super.onStop()
+        val pref = this.getSharedPreferences(SETTING_UI_NAME, Context.MODE_PRIVATE)
+        pref.apply {
+            this.putString(SAVED_FILTER, EPubContent.filter)
+            val firstItemIdx = (book_list.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
+            val firstItem = book_list.getChildAt(0)
+            val scrollPosition = firstItem.top - book_list.paddingTop
+            this.putInt(SAVED_SCROLL, firstItemIdx)
+            this.putInt(SAVED_SCROLL_OFFSET, scrollPosition)
+            Log.i("start_stop", "Filter is %s".format(EPubContent.filter))
+            Log.i("start_stop", "Scroll is idx:%d, offset:%d".format(firstItemIdx, scrollPosition))
         }
-    }
-
-    override fun onSaveInstanceState(outState: Bundle?) {
-        super.onSaveInstanceState(outState)
-        outState?.putString(SAVED_FILTER, EPubContent.filter)
-        Log.i("instance_state", "filter save is: '%s'".format(EPubContent.filter))
     }
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
@@ -138,6 +142,14 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
         EPubContent.onListChanged = {
             runOnUiThread {
                 book_list.adapter!!.notifyDataSetChanged()
+                if (firstItemIdx != 0 || firstItemOffset != 0) {
+                    (book_list.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(
+                            firstItemIdx,
+                            firstItemOffset
+                    )
+                    firstItemIdx = 0
+                    firstItemOffset = 0
+                }
             }
         }
         if (EPubContent.ITEMS.isEmpty()) {
@@ -284,6 +296,9 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
     companion object {
         const val PERMISSION_SDCARD = 1
         const val SAVED_FILTER = "filter"
+        const val SAVED_SCROLL = "scroll"
+        const val SAVED_SCROLL_OFFSET = "scroll_offset"
+        const val SETTING_UI_NAME = "ui_states"
         const val HIGHLIGHT = "<font color='%s'>$1</font>"
         val HIGHLIGHT_COLOR = arrayOf("#FFCC00", "#CCFF00", "#FF00CC", "#CC00FF")
         const val HIGHLIGHT_MIN = 2

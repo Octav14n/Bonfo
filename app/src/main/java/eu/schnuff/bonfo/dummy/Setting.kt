@@ -23,7 +23,7 @@ object Setting {
         val pref = context.getPref()
         watchedDirectory.addAll(pref.getStringSet(WATCHED_DIR, Collections.singleton(
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath
-        )))
+        ))!!)
         filterLargeFiles = pref.getBoolean(FILTER_LARGE, false)
     }
 
