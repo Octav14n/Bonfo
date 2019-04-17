@@ -110,7 +110,7 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
             this.putString(SAVED_FILTER, EPubContent.filter)
             val firstItemIdx = (book_list.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
             val firstItem = book_list.getChildAt(0)
-            val scrollPosition = firstItem.top - book_list.paddingTop
+            val scrollPosition = if (firstItem == null) 0 else firstItem.top - book_list.paddingTop
             this.putInt(SAVED_SCROLL, firstItemIdx)
             this.putInt(SAVED_SCROLL_OFFSET, scrollPosition)
             Log.i("start_stop", "Filter is %s".format(EPubContent.filter))
