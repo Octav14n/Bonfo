@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.graphics.PorterDuff
 import android.net.Uri
 import android.os.Bundle
 import android.os.StrictMode
@@ -17,6 +18,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import eu.schnuff.bonfo.dummy.EPubContent
@@ -26,7 +28,6 @@ import eu.schnuff.bonfo.helpers.RFastScroller
 import kotlinx.android.synthetic.main.activity_book_list.*
 import kotlinx.android.synthetic.main.book_list.*
 import kotlinx.android.synthetic.main.book_list_content.view.*
-import org.jetbrains.anko.apply
 import org.jetbrains.anko.newTask
 import org.jetbrains.anko.startActivity
 import org.jetbrains.anko.toast
@@ -105,7 +106,7 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
     override fun onStop() {
         super.onStop()
         val pref = this.getSharedPreferences(SETTING_UI_NAME, Context.MODE_PRIVATE)
-        pref.apply {
+        pref.edit {
             this.putString(SAVED_FILTER, EPubContent.filter)
             val firstItemIdx = (book_list.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
             val firstItem = book_list.getChildAt(0)
@@ -206,6 +207,8 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
             }
             onClickListener = View.OnClickListener {
                 val item = it.tag as EPubItem
+                Setting.setLastEpubOpenedPath(parentActivity.applicationContext, item.filePath)
+                (it.parent as? View)?.invalidate()
                 val intent = Intent(Intent.ACTION_VIEW)
                         .newTask()
                         .setDataAndType(Uri.fromFile(File(item.filePath)), "application/epub+zip")
@@ -242,6 +245,10 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
                 tag = item
                 setOnLongClickListener(onLongClickListener)
                 setOnClickListener(onClickListener)
+                if (item.filePath == Setting.lastEpubOpenedPath) {
+                    //background.setColorFilter(Color.argb(127, 255, 0, 0), PorterDuff.Mode.SCREEN)
+                    backgroundTintMode = PorterDuff.Mode.LIGHTEN
+                }
             }
         }
 
