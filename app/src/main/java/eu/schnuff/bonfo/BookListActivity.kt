@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
-import android.graphics.PorterDuff
 import android.net.Uri
 import android.os.Bundle
 import android.os.StrictMode
@@ -186,6 +185,7 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
 
         private val onLongClickListener: View.OnLongClickListener
         private val onClickListener: View.OnClickListener
+        private var lastClickedView: View? = null
 
         init {
             onLongClickListener = View.OnLongClickListener { v ->
@@ -208,7 +208,9 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
             onClickListener = View.OnClickListener {
                 val item = it.tag as EPubItem
                 Setting.setLastEpubOpenedPath(parentActivity.applicationContext, item.filePath)
-                (it.parent as? View)?.invalidate()
+                it.isSelected = true
+                lastClickedView?.isSelected = false
+                lastClickedView = it
                 val intent = Intent(Intent.ACTION_VIEW)
                         .newTask()
                         .setDataAndType(Uri.fromFile(File(item.filePath)), "application/epub+zip")
@@ -246,8 +248,10 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
                 setOnLongClickListener(onLongClickListener)
                 setOnClickListener(onClickListener)
                 if (item.filePath == Setting.lastEpubOpenedPath) {
-                    //background.setColorFilter(Color.argb(127, 255, 0, 0), PorterDuff.Mode.SCREEN)
-                    backgroundTintMode = PorterDuff.Mode.LIGHTEN
+                    isSelected = true
+                    lastClickedView = this
+                } else if (isSelected) {
+                    isSelected = false
                 }
             }
         }

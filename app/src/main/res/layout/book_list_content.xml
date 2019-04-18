@@ -5,8 +5,10 @@
               android:orientation="vertical"
               android:layout_margin="@dimen/text_margin"
               android:layout_marginBottom="0dp"
-              android:background="@color/colorPrimaryDark" android:backgroundTint="@color/openedHighlight"
+              android:background="@drawable/listitem"
+              android:backgroundTint="@color/openedHighlight"
               android:backgroundTintMode="multiply">
+    <!--android:background="@color/colorPrimaryDark"-->
     <!--<View android:id="@+id/divider2"
           android:layout_width="match_parent"
           android:layout_height="1dp"

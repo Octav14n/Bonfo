@@ -6,5 +6,5 @@
     <color name="body1">#AAA</color>
     <color name="genres">#080</color>
     <color name="characters">#3C3</color>
-    <color name="openedHighlight">#52FF7F00</color>
+    <color name="openedHighlight">#FF7F00</color>
 </resources>
