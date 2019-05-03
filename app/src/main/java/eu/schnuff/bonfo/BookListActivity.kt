@@ -68,6 +68,8 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
             EPubContent.filter = pref.getString(SAVED_FILTER, "")!!
             firstItemIdx = pref.getInt(SAVED_SCROLL, 0)
             firstItemOffset = pref.getInt(SAVED_SCROLL_OFFSET, 0)
+        } else {
+            Toast.makeText(applicationContext, "Recreated from SavedState.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -94,8 +96,8 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
         return true
     }
 
-    override fun onStop() {
-        super.onStop()
+    override fun onPause() {
+        super.onPause()
         val pref = this.getSharedPreferences(SETTING_UI_NAME, Context.MODE_PRIVATE)
         pref.edit {
             this.putString(SAVED_FILTER, EPubContent.filter)
