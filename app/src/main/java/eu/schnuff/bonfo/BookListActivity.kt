@@ -111,17 +111,18 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
         }
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        when (item?.itemId) {
-            R.id.settings -> startActivity<SettingsActivity>()
-            R.id.filterLargeFile -> {
-                item.isChecked = !item.isChecked
-                Setting.setFilterLargeFiles(this, item.isChecked)
-                EPubContent.filterLarge = item.isChecked
-            }
-            else -> super.onOptionsItemSelected(item)
+    override fun onOptionsItemSelected(item: MenuItem) = when(item.itemId) {
+        R.id.settings -> {
+            startActivity<SettingsActivity>()
+            true
         }
-        return true
+        R.id.filterLargeFile -> {
+            item.isChecked = !item.isChecked
+            Setting.setFilterLargeFiles(this, item.isChecked)
+            EPubContent.filterLarge = item.isChecked
+            true
+        }
+        else -> super.onOptionsItemSelected(item)
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
