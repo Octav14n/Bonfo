@@ -2,5 +2,5 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle" >
     <corners android:radius="@dimen/list_corner_radius"/>
     <solid android:color="@color/colorPrimaryDark" />
-    <stroke android:width="3dip" android:color="@color/listitem_border"/>
+    <stroke android:width="@dimen/list_border_width" android:color="@color/listitem_border"/>
 </shape>
