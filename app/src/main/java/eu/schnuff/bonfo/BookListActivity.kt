@@ -10,7 +10,6 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.SearchView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -63,14 +62,13 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
         setupRecyclerView(book_list)
         RFastScroller(book_list, Color.WHITE, Color.GRAY)
 
-        if (savedInstanceState == null) {
-            val pref = this.getSharedPreferences(SETTING_UI_NAME, Context.MODE_PRIVATE)
-            EPubContent.filter = pref.getString(SAVED_FILTER, "")!!
-            firstItemIdx = pref.getInt(SAVED_SCROLL, 0)
-            firstItemOffset = pref.getInt(SAVED_SCROLL_OFFSET, 0)
-        } else {
-            Toast.makeText(applicationContext, "Recreated from SavedState.", Toast.LENGTH_SHORT).show()
-        }
+        val pref = this.getSharedPreferences(SETTING_UI_NAME, Context.MODE_PRIVATE)
+        EPubContent.filter = pref.getString(SAVED_FILTER, "")!!
+        firstItemIdx = pref.getInt(SAVED_SCROLL, -1)
+        firstItemOffset = pref.getInt(SAVED_SCROLL_OFFSET, 0)
+
+        Log.i("start_stop", "Filter is %s".format(EPubContent.filter))
+        Log.i("start_stop", "Scroll is idx:%d, offset:%d".format(firstItemIdx, firstItemOffset))
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -103,7 +101,7 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
             this.putString(SAVED_FILTER, EPubContent.filter)
             val firstItemIdx = (book_list.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
             val firstItem = book_list.getChildAt(0)
-            val scrollPosition = if (firstItem == null) 0 else firstItem.top - book_list.paddingTop
+            val scrollPosition = if (firstItem == null) 0 else (firstItem.top - book_list.paddingTop)
             this.putInt(SAVED_SCROLL, firstItemIdx)
             this.putInt(SAVED_SCROLL_OFFSET, scrollPosition)
             Log.i("start_stop", "Filter is %s".format(EPubContent.filter))
@@ -137,17 +135,18 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
         EPubContent.onListChanged = {
             runOnUiThread {
                 book_list.adapter!!.notifyDataSetChanged()
-                if (firstItemIdx != 0 || firstItemOffset != 0) {
+                if (firstItemIdx != -1) {
                     (book_list.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(
                             firstItemIdx,
                             firstItemOffset
                     )
-                    firstItemIdx = 0
+                    firstItemIdx = -1
                     firstItemOffset = 0
                 }
             }
         }
-        if (EPubContent.ITEMS.isEmpty()) {
+
+        if (!EPubContent.isLoaded) {
             book_list_refresh!!.isRefreshing = true
             EPubContent.loadItems(applicationContext) {
                 book_list_refresh!!.isRefreshing = false

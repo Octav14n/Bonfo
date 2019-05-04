@@ -40,9 +40,10 @@ object EPubContent {
     var ITEMS: List<EPubItem> = ArrayList()
         set(value) {
             field = value
-            onListChanged()
+            if (isLoaded) onListChanged()
         }
     var onListChanged: () -> Unit = {}
+    val isLoaded get() = items_original.isNotEmpty()
 
     var filter = ""
         set(value) {
