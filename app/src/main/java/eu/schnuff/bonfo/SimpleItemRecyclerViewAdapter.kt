@@ -109,7 +109,8 @@ class SimpleItemRecyclerViewAdapter(private val parentActivity: BookListActivity
             this.visibility = View.VISIBLE
             val value = highlight(text, highlighting)
             val formatted = if (formattedBy == null) value else parentActivity.getString(formattedBy, value)
-            this.text = Html.fromHtml(formatted, Html.FROM_HTML_MODE_COMPACT)
+            val htmlified = formatted.replace("\n", "<br>")
+            this.text = Html.fromHtml(htmlified, Html.FROM_HTML_MODE_COMPACT)
         }
     }
     private fun TextView.setHighlightedText(texts: Array<String>, highlighting: Collection<String>, formattedBy: Int? = null) {
@@ -119,7 +120,8 @@ class SimpleItemRecyclerViewAdapter(private val parentActivity: BookListActivity
             this.visibility = View.VISIBLE
             val value = highlight(texts, highlighting)
             val formatted = if (formattedBy == null) value else parentActivity.getString(formattedBy, value)
-            this.text = Html.fromHtml(formatted, Html.FROM_HTML_MODE_COMPACT)
+            val htmlified = formatted.replace("\n", "<br>")
+            this.text = Html.fromHtml(htmlified, Html.FROM_HTML_MODE_COMPACT)
         }
     }
 
