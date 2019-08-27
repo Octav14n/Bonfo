@@ -60,7 +60,6 @@ data class EPubItem(
 
         other as EPubItem
 
-        if (filePath != other.filePath) return false
         if (fileName != other.fileName) return false
         if (modified != other.modified) return false
         if (fileSize != other.fileSize) return false
