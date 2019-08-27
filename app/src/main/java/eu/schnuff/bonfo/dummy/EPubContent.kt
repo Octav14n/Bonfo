@@ -1,11 +1,13 @@
 package eu.schnuff.bonfo.dummy
 
 import android.content.Context
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.anko.doAsync
 import org.w3c.dom.Element
 import java.io.File
 import java.util.*
-import java.util.concurrent.CountDownLatch
 import java.util.zip.ZipFile
 import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.collections.ArrayList
@@ -81,22 +83,22 @@ object EPubContent {
             /*onComplete {
                 onComplete()
             }*/
-            val itemFilePath: MutableMap<String, EPubItem> = HashMap()
-            items_original.forEach {
-                itemFilePath[it.filePath] = it
-            }
+            val itemFilePath = items_original.associateByTo(mutableMapOf<String, EPubItem>()) { it.filePath }
 
             val dao = PersistenceHelper.epub_items(context).ePubItemDao()
-            val list = LinkedList<EPubItem>()
-            Setting.watchedDirectory.forEach {
-                val dir = File(it)
-                val files = dir.listFiles { _, name -> name.endsWith(".epub") }
-                val countDownLatch = CountDownLatch(files.size)
-                files.forEach { file ->
-                    readEPub(file, itemFilePath.remove(file.absolutePath), dao)?.run { list.add(this) }
-                    countDownLatch.countDown()
+            val list = mutableListOf<EPubItem>()
+            runBlocking {
+                Setting.watchedDirectory.forEach {
+                    val dir = File(it)
+                    val epubs = dir.walkTopDown().filter { it.isFile && it.endsWith(".epub") }.map { file ->
+                        async(Dispatchers.IO) {
+                            readEPub(file, itemFilePath.remove(file.absolutePath), dao)
+                        }
+                    }
+                    epubs.forEach {
+                        it.await()?.run { list.add(this) }
+                    }
                 }
-                countDownLatch.await()
             }
             list.sortWith(compareByDescending(EPubItem::modified))
 
@@ -135,8 +137,15 @@ object EPubContent {
             val opfEntry = epub.getEntry(OPF_FILE_PATH)
             if (opfEntry === null)
                 return null
-            if (opfEntry.crc == other?.opfCrc)
+            if (opfEntry.crc == other?.opfCrc) {
+                val modified = Date(file.lastModified())
+                if (modified != other.modified) {
+                    val item = other.copy(modified = modified)
+                    dao.update(item)
+                    return item
+                }
                 return other
+            }
             epub.getInputStream(opfEntry).use { opfStream ->
                 val opf = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(opfStream)
                 val meta = opf.getElementsByTagName(METADATA_PARENT_NAME)?.item(0) as? Element ?: return null
