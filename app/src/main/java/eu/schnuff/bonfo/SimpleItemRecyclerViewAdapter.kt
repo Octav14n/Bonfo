@@ -3,7 +3,6 @@ package eu.schnuff.bonfo
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
-import android.os.Bundle
 import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
@@ -15,7 +14,6 @@ import eu.schnuff.bonfo.dummy.EPubItem
 import eu.schnuff.bonfo.dummy.Setting
 import kotlinx.android.synthetic.main.book_list_content.view.*
 import org.jetbrains.anko.newTask
-import org.jetbrains.anko.startActivity
 import org.jetbrains.anko.toast
 import java.io.File
 
@@ -23,7 +21,7 @@ class SimpleItemRecyclerViewAdapter(private val parentActivity: BookListActivity
                                     private val twoPane: Boolean) :
         RecyclerView.Adapter<SimpleItemRecyclerViewAdapter.ViewHolder>() {
 
-    private val onLongClickListener: View.OnLongClickListener
+    // private val onLongClickListener: View.OnLongClickListener
     private val onClickListener: View.OnClickListener
     private var lastClickedView: View? = null
 
@@ -34,7 +32,7 @@ class SimpleItemRecyclerViewAdapter(private val parentActivity: BookListActivity
     }
 
     init {
-        onLongClickListener = View.OnLongClickListener { v ->
+        /*onLongClickListener = View.OnLongClickListener { v ->
             val item = v.tag as EPubItem
             if (twoPane) {
                 val fragment = BookDetailFragment().apply {
@@ -50,12 +48,12 @@ class SimpleItemRecyclerViewAdapter(private val parentActivity: BookListActivity
                 parentActivity.startActivity<BookDetailActivity>(BookDetailFragment.ARG_ITEM_ID to item.filePath)
             }
             true
-        }
+        }*/
         onClickListener = View.OnClickListener {
             val item = it.tag as EPubItem
             Setting.setLastEpubOpenedPath(parentActivity.applicationContext, item.filePath)
-            it.isSelected = true
             lastClickedView?.isSelected = false
+            it.isSelected = true
             lastClickedView = it
             val intent = Intent(Intent.ACTION_VIEW)
                     .newTask()
@@ -91,7 +89,7 @@ class SimpleItemRecyclerViewAdapter(private val parentActivity: BookListActivity
 
         with(holder.itemView) {
             tag = item
-            setOnLongClickListener(onLongClickListener)
+            // setOnLongClickListener(onLongClickListener)
             setOnClickListener(onClickListener)
             if (item.filePath == Setting.lastEpubOpenedPath) {
                 isSelected = true
