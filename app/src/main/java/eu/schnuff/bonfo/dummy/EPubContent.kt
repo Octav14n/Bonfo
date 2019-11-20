@@ -1,15 +1,21 @@
 package eu.schnuff.bonfo.dummy
 
 import android.content.Context
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
+import android.util.Log
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.anko.doAsync
-import org.w3c.dom.Element
+import org.w3c.dom.Node
+import org.w3c.dom.NodeList
+import java.io.BufferedInputStream
 import java.io.File
 import java.util.*
 import java.util.zip.ZipFile
+import javax.xml.XMLConstants
+import javax.xml.namespace.NamespaceContext
 import javax.xml.parsers.DocumentBuilderFactory
+import javax.xml.xpath.XPathConstants
+import javax.xml.xpath.XPathExpression
+import javax.xml.xpath.XPathFactory
 import kotlin.collections.ArrayList
 
 /**
@@ -19,19 +25,39 @@ import kotlin.collections.ArrayList
  * TODO: Replace all uses of this class before publishing your app.
  */
 private const val LARGE_FILE_MIN_SIZE: Long = (1024 shl 1) * 100
-private const val OPF_FILE_PATH = "OEBPS/Content.opf"
-private const val METADATA_PARENT_NAME = "metadata"
-private const val METADATA_TAG_NAMESPACE_PREFIX = "dc:"
-private const val METADATA_URL = "${METADATA_TAG_NAMESPACE_PREFIX}identifier"
-private const val METADATA_TITLE = "${METADATA_TAG_NAMESPACE_PREFIX}title"
-private const val METADATA_AUTHOR = "${METADATA_TAG_NAMESPACE_PREFIX}creator"
-private const val METADATA_DESCRIPTION = "${METADATA_TAG_NAMESPACE_PREFIX}description"
-private const val METADATA_GENRES = "${METADATA_TAG_NAMESPACE_PREFIX}type"
-private const val METADATA_META = "meta"
-private const val METADATA_META_NAME = "name"
-private const val METADATA_META_CONTENT = "content"
-private const val METADATA_META_FANDOM_NAME = "fandom"
-private const val METADATA_META_CHARACTERS_NAME = "characters"
+private const val CONTAINER_FILE_PATH = "META-INF/container.xml"
+private val XPATH = XPathFactory.newInstance().newXPath().apply {
+    namespaceContext = object : NamespaceContext {
+        override fun getNamespaceURI(p0: String?): String = when (p0) {
+            "x" -> "http://www.idpf.org/2007/opf"
+            "dc" -> "http://purl.org/dc/elements/1.1/"
+            "opf" -> "http://www.idpf.org/2007/opf"
+            "xsi" -> "http://www.w3.org/2001/XMLSchema-instance"
+            "dcterms" -> "http://purl.org/dc/terms/"
+            "cont" -> "urn:oasis:names:tc:opendocument:xmlns:container"
+            else -> XMLConstants.NULL_NS_URI
+        }
+
+        override fun getPrefix(p0: String?): String {
+            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        }
+
+        override fun getPrefixes(p0: String?): MutableIterator<String> {
+            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        }
+
+    }
+}
+private val XPATH_META = XPATH.compile("/x:package/x:metadata")
+private val XPATH_ID = XPATH.compile("dc:identifier/text()")
+private val XPATH_TITLE = XPATH.compile("dc:title/text()")
+private val XPATH_AUTHOR = XPATH.compile("dc:creator/text()")
+private val XPATH_FANDOM = XPATH.compile("x:meta[@name='fandom']/@content|dc:subject[not(starts-with(., 'Last Update') or text() = 'FanFiction')]/text()")
+private val XPATH_DESCRIPTION = XPATH.compile("dc:description/text()")
+private val XPATH_GENRES = XPATH.compile("dc:type/text()")
+private val XPATH_CHARACTERS = XPATH.compile("x:meta[@name='characters']/@content")
+private val XPATH_OPF_FILE_PATH = XPATH.compile("//cont:rootfile/@full-path[1]")
+private val DOCUMENT_FACTORY = DocumentBuilderFactory.newInstance().apply { isNamespaceAware = true }
 
 object EPubContent {
 
@@ -90,13 +116,14 @@ object EPubContent {
             runBlocking {
                 Setting.watchedDirectory.forEach {
                     val dir = File(it)
-                    val epubs = dir.walkTopDown().filter { it.isFile && it.endsWith(".epub") }.map { file ->
-                        async(Dispatchers.IO) {
-                            readEPub(file, itemFilePath.remove(file.absolutePath), dao)
+                    dir.walkTopDown().filter { it.isFile && it.extension =="epub" }.forEach { file ->
+                        try {
+                            readEPub(file, itemFilePath.remove(file.absolutePath), dao)?.run {
+                                list.add(this)
+                            }
+                        } catch (e: Exception) {
+                            Log.d("reading", "error reading", e)
                         }
-                    }
-                    epubs.forEach {
-                        it.await()?.run { list.add(this) }
                     }
                 }
             }
@@ -134,7 +161,16 @@ object EPubContent {
 
     private fun readEPub(file: File, other: EPubItem?, dao: EPubItemDAO): EPubItem? {
         ZipFile(file).use { epub ->
-            val opfEntry = epub.getEntry(OPF_FILE_PATH)
+            var opfPath = epub.entries().asSequence().first { !it.isDirectory && it.name.endsWith(".opf") }?.name
+            if (opfPath == null) {
+                val containerInfoEntry = epub.getEntry(CONTAINER_FILE_PATH)!!
+                opfPath = BufferedInputStream(epub.getInputStream(containerInfoEntry)).use {
+                    val container = DOCUMENT_FACTORY.newDocumentBuilder().parse(it)
+                    it.close()
+                    XPATH_OPF_FILE_PATH.evaluate(container, XPathConstants.STRING).toString()
+                }
+            }
+            val opfEntry = epub.getEntry(opfPath)
             if (opfEntry === null)
                 return null
             if (opfEntry.crc == other?.opfCrc) {
@@ -146,46 +182,24 @@ object EPubContent {
                 }
                 return other
             }
-            epub.getInputStream(opfEntry).use { opfStream ->
-                val opf = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(opfStream)
-                val meta = opf.getElementsByTagName(METADATA_PARENT_NAME)?.item(0) as? Element ?: return null
-                meta.normalize()
+            Log.d("reading", "Now reading " + file.nameWithoutExtension)
+            BufferedInputStream(epub.getInputStream(opfEntry)).use { opfStream ->
+                val opf = DOCUMENT_FACTORY.newDocumentBuilder().parse(opfStream)
+                opfStream.close()
+                opf.normalizeDocument()
 
-                /*Log.d(this.javaClass.simpleName, "meta of '${file.name}' has the following elements:")
-            for (nodeI in 0 .. meta.childNodes.length) {
-                val node = meta.childNodes.item(nodeI) as? Element ?: continue
-                val attrsLength = if (node.hasAttributes()) node.attributes.length else 0
-                val attrs = HashMap<String, String>(attrsLength)
-                for (attrI in 0 until attrsLength) {
-                    val attr = node.attributes.item(attrI) as Attr
-                    attrs[attr.name] = attr.value
-                }
-                Log.d(this.javaClass.simpleName, "\tNode name '${node.nodeName}' with attributes '$attrs'")
-            }*/
+                val meta  = XPATH_META.evaluate(opf, XPathConstants.NODE) as Node
 
-                val url = meta.getElementsByTagName(METADATA_URL).item(0).textContent.trimEnd(' ', '\n')
-                val title = meta.getElementsByTagName(METADATA_TITLE).item(0).textContent
-                        .trimEnd(' ', '\n')
-                val author = meta.getElementsByTagName(METADATA_AUTHOR).takeIf { it.length > 0 }?.item(0)?.textContent?.trimEnd(' ', '\n')
-                val description = meta.getElementsByTagName(METADATA_DESCRIPTION).takeIf { it.length > 0 }?.item(0)?.textContent?.trimEnd(' ', '\n')
-                val genres = meta.getElementsByTagName(METADATA_GENRES).takeIf { it.length > 0 }?.item(0)
-                        ?.textContent?.trimEnd(' ', '\n')?.split(", ") ?: Collections.emptyList<String>()
-                var fandom: String? = null
-                var characters = Collections.emptyList<String>()
-                meta.getElementsByTagName(METADATA_META).let {
-                    for (i in 0 until it.length) {
-                        val elem = it.item(i) as Element
-                        if (!elem.hasAttribute(METADATA_META_NAME) || !elem.hasAttribute(METADATA_META_CONTENT))
-                            continue
-                        val content = elem.getAttribute(METADATA_META_CONTENT)
-                        when (elem.getAttribute(METADATA_META_NAME).toLowerCase()) {
-                            METADATA_META_FANDOM_NAME -> fandom = content
-                            METADATA_META_CHARACTERS_NAME -> characters = content.split(", ")
-                        }
-                    }
-                }
+                val id = path(meta, XPATH_ID) ?: "file://" + file.canonicalPath
+                val title = path(meta, XPATH_TITLE) ?: "<No Title>"
+                val author = path(meta, XPATH_AUTHOR)
+                val fandom = path(meta, XPATH_FANDOM)
+                val description = path(meta, XPATH_DESCRIPTION, "\n\n")
+                val genres = path(meta, XPATH_GENRES)?.split(", ") ?: Collections.emptyList<String>()
+                val characters = path(meta, XPATH_CHARACTERS)?.split(", ") ?: Collections.emptyList<String>()
+
                 val item = EPubItem(file.absolutePath, file.name, Date(file.lastModified()), file.length(), opfEntry.crc,
-                        url, title, author, fandom, description, genres.toTypedArray(), characters.toTypedArray())
+                        id, title, author, fandom, description, genres.toTypedArray(), characters.toTypedArray())
                 if (other != null) {
                     dao.update(item)
                 } else {
@@ -193,6 +207,15 @@ object EPubContent {
                 }
                 return item
             }
+        }
+    }
+
+    private fun path(node: Node, xPath: XPathExpression, seperator: String = ", "): String? {
+        val texts = xPath.evaluate(node, XPathConstants.NODESET) as NodeList
+        return if (texts.length == 0) {
+            null
+        } else {
+            Array(texts.length) { i -> texts.item(i).nodeValue.trim() }.joinToString(seperator)
         }
     }
 }
