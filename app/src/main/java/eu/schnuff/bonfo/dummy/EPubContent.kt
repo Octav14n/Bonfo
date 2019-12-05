@@ -160,6 +160,9 @@ object EPubContent {
     }
 
     private fun readEPub(file: File, other: EPubItem?, dao: EPubItemDAO): EPubItem? {
+        if (other != null && Date(file.lastModified()) == other.modified && file.length() == other.fileSize)
+            return other
+
         ZipFile(file).use { epub ->
             var opfPath = epub.entries().asSequence().first { !it.isDirectory && it.name.endsWith(".opf") }?.name
             if (opfPath == null) {
