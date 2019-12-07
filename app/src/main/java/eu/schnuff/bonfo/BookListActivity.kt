@@ -2,6 +2,7 @@ package eu.schnuff.bonfo
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
@@ -120,6 +121,7 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
             EPubContent.filterLarge = item.isChecked
             true
         }
+        R.id.menuRefresh -> {readEPubsForList(); true}
         else -> super.onOptionsItemSelected(item)
     }
 
@@ -143,14 +145,13 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
                     firstItemIdx = -1
                     firstItemOffset = 0
                 }
+                book_list_refresh!!.isRefreshing = false
             }
         }
 
         if (!EPubContent.isLoaded) {
             book_list_refresh!!.isRefreshing = true
-            EPubContent.loadItems(applicationContext) {
-                book_list_refresh!!.isRefreshing = false
-            }
+            EPubContent.loadItems(applicationContext)
         }
     }
 
@@ -161,9 +162,9 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
                     PERMISSION_SDCARD)
         } else {
             book_list_refresh!!.isRefreshing = true
-            EPubContent.readItems(applicationContext) {
-                book_list_refresh!!.isRefreshing = false
-            }
+            val intent = Intent(this, EPubRefreshService::class.java)
+                    .setAction(EPubRefreshService.ACTION_START)
+            startService(intent)
         }
     }
 

@@ -2,7 +2,6 @@ package eu.schnuff.bonfo.dummy
 
 import android.content.Context
 import android.util.Log
-import kotlinx.coroutines.runBlocking
 import org.jetbrains.anko.doAsync
 import org.w3c.dom.Node
 import org.w3c.dom.NodeList
@@ -58,6 +57,7 @@ private val XPATH_GENRES = XPATH.compile("dc:type/text()")
 private val XPATH_CHARACTERS = XPATH.compile("x:meta[@name='characters']/@content")
 private val XPATH_OPF_FILE_PATH = XPATH.compile("//cont:rootfile/@full-path[1]")
 private val DOCUMENT_FACTORY = DocumentBuilderFactory.newInstance().apply { isNamespaceAware = true }
+private val UPDATE_INTERVAL_MILLIS = 250
 
 object EPubContent {
 
@@ -104,30 +104,34 @@ object EPubContent {
         return items_original.find { it.filePath == filePath }
     }
 
-    fun readItems(context: Context, onComplete: () -> Unit) {
+    fun readItems(context: Context, onComplete: () -> Unit = {}, onProgress: (maxElements: Int, finishedElements: Int) -> Unit = {_, _ -> }) {
         doAsync {
-            /*onComplete {
-                onComplete()
-            }*/
             val itemFilePath = items_original.associateByTo(mutableMapOf<String, EPubItem>()) { it.filePath }
 
             val dao = PersistenceHelper.epub_items(context).ePubItemDao()
-            val list = mutableListOf<EPubItem>()
-            runBlocking {
-                Setting.watchedDirectory.forEach {
-                    val dir = File(it)
-                    dir.walkTopDown().filter { it.isFile && it.extension =="epub" }.forEach { file ->
-                        try {
-                            readEPub(file, itemFilePath.remove(file.absolutePath), dao)?.run {
-                                list.add(this)
-                            }
-                        } catch (e: Exception) {
-                            Log.d("reading", "error reading", e)
-                        }
+            val list = sortedSetOf<EPubItem>(compareByDescending(EPubItem::modified))
+            //runBlocking {
+            val files = LinkedList<File>()
+            Setting.watchedDirectory.forEach {
+                val dir = File(it)
+                files.addAll(dir.walkTopDown().filter { it.isFile && it.extension == "epub" })
+            }
+            val maxElements = files.size
+            var nextUpdate = 0L
+            files.forEachIndexed { index, file ->
+                try {
+                    readEPub(file, itemFilePath.remove(file.absolutePath), dao)?.run {
+                        list.add(this)
                     }
+                    if (nextUpdate < System.currentTimeMillis()) {
+                        onProgress(maxElements, index)
+                        nextUpdate = System.currentTimeMillis() + UPDATE_INTERVAL_MILLIS
+                    }
+                } catch (e: Exception) {
+                    Log.d("reading", "error reading", e)
                 }
             }
-            list.sortWith(compareByDescending(EPubItem::modified))
+            //}
 
             // Remove deleted items.
             itemFilePath.values.forEach {
@@ -140,13 +144,13 @@ object EPubContent {
         }
     }
 
-    private fun setItems(items: List<EPubItem>) {
+    private fun setItems(items: Collection<EPubItem>) {
         items_original.clear()
         items.forEach { addItem(it) }
         applyFilter()
     }
 
-    fun loadItems(context: Context, onComplete: () -> Unit) {
+    fun loadItems(context: Context, onComplete: () -> Unit = {}) {
         doAsync {
             val db = PersistenceHelper.epub_items(context)
             val items = db.ePubItemDao().getAll()
@@ -163,9 +167,12 @@ object EPubContent {
         if (other != null && Date(file.lastModified()) == other.modified && file.length() == other.fileSize)
             return other
 
+        // Log.d("reading-time", System.nanoTime().toString() + " - open zip file " + file.name)
         ZipFile(file).use { epub ->
+            // Log.d("reading-time", System.nanoTime().toString() + " - find opf")
             var opfPath = epub.entries().asSequence().first { !it.isDirectory && it.name.endsWith(".opf") }?.name
             if (opfPath == null) {
+                // Log.d("reading-time", System.nanoTime().toString() + " - read container document")
                 val containerInfoEntry = epub.getEntry(CONTAINER_FILE_PATH)!!
                 opfPath = BufferedInputStream(epub.getInputStream(containerInfoEntry)).use {
                     val container = DOCUMENT_FACTORY.newDocumentBuilder().parse(it)
@@ -173,6 +180,7 @@ object EPubContent {
                     XPATH_OPF_FILE_PATH.evaluate(container, XPathConstants.STRING).toString()
                 }
             }
+            // Log.d("reading-time", System.nanoTime().toString() + " - grab opf")
             val opfEntry = epub.getEntry(opfPath)
             if (opfEntry === null)
                 return null
@@ -185,14 +193,20 @@ object EPubContent {
                 }
                 return other
             }
-            Log.d("reading", "Now reading " + file.nameWithoutExtension)
+            // Log.d("reading", "Now reading " + file.nameWithoutExtension)
+            // Log.d("reading-time", System.nanoTime().toString() + " - open opf")
             BufferedInputStream(epub.getInputStream(opfEntry)).use { opfStream ->
+                // Log.d("reading-time", System.nanoTime().toString() + " - read opf")
                 val opf = DOCUMENT_FACTORY.newDocumentBuilder().parse(opfStream)
                 opfStream.close()
+                // Log.d("reading-time", System.nanoTime().toString() + " - normalize opf")
                 opf.normalizeDocument()
 
+                // Log.d("reading-time", System.nanoTime().toString() + " - grab meta")
                 val meta  = XPATH_META.evaluate(opf, XPathConstants.NODE) as Node
+                meta.parentNode.removeChild(meta)
 
+                // Log.d("reading-time", System.nanoTime().toString() + " - grab meta children")
                 val id = path(meta, XPATH_ID) ?: "file://" + file.canonicalPath
                 val title = path(meta, XPATH_TITLE) ?: "<No Title>"
                 val author = path(meta, XPATH_AUTHOR)
@@ -201,13 +215,16 @@ object EPubContent {
                 val genres = path(meta, XPATH_GENRES)?.split(", ") ?: Collections.emptyList<String>()
                 val characters = path(meta, XPATH_CHARACTERS)?.split(", ") ?: Collections.emptyList<String>()
 
+                // Log.d("reading-time", System.nanoTime().toString() + " - build EPubItem")
                 val item = EPubItem(file.absolutePath, file.name, Date(file.lastModified()), file.length(), opfEntry.crc,
                         id, title, author, fandom, description, genres.toTypedArray(), characters.toTypedArray())
+                // Log.d("reading-time", System.nanoTime().toString() + " - Save EPubItem")
                 if (other != null) {
                     dao.update(item)
                 } else {
                     dao.insert(item)
                 }
+                // Log.d("reading-time", System.nanoTime().toString() + " - close zip file " + file.name)
                 return item
             }
         }

@@ -10,4 +10,11 @@
     <string name="pick_diretories">Source directories</string>
     <string name="choose_directory">Choose Directory</string>
     <string name="hide_small_files">Hide small files</string>
+    <string name="EpubRefreshTitle">Reading.</string>
+    <string name="EPubRefreshInitializing">Initializing…</string>
+    <string name="EPubRefreshActionAbort">Abort</string>
+    <string name="channel_name">EPub Refresh</string>
+    <string name="channel_description">Initializing and reloading the list of all EPub files in the configurated
+        directories.
+    </string>
 </resources>
