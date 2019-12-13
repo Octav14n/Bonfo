@@ -17,4 +17,5 @@
     <string name="channel_description">Initializing and reloading the list of all EPub files in the configurated
         directories.
     </string>
+    <string name="menuRefresh">Refresh</string>
 </resources>

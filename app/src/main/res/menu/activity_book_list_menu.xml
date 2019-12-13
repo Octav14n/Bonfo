@@ -8,7 +8,8 @@
             app:actionViewClass="android.widget.SearchView"
             app:showAsAction="ifRoom">
     </item>
-    <item android:title="Refresh" android:id="@+id/menuRefresh" android:icon="@android:drawable/ic_popup_sync"/>
+    <item android:title="@string/menuRefresh" android:id="@+id/menuRefresh"
+          android:icon="@drawable/ic_sync_24dp"/>
     <item android:title="@string/hide_small_files" android:id="@+id/filterLargeFile" android:checkable="true"/>
     <item android:title="@string/settings" android:id="@+id/settings" android:icon="@android:drawable/ic_menu_preferences"/>
 </menu>

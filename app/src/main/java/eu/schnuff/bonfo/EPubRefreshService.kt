@@ -1,18 +1,12 @@
 package eu.schnuff.bonfo
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.app.Service
+import android.app.*
 import android.content.Context
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import eu.schnuff.bonfo.dummy.EPubContent
-import android.R.drawable.stat_sys_warning as drawable_icon_abort
-import android.R.drawable.sym_def_app_icon as drawable_icon_app
 
 
 class EPubRefreshService : Service() {
@@ -52,7 +46,7 @@ class EPubRefreshService : Service() {
     private fun createNotification() : NotificationCompat.Builder {
         createNotificationChannel()
         // Create notification default intent.
-        val intent = Intent()
+        val intent = Intent(this, BookListActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(this, 0, intent, 0)
         val abortIntent = PendingIntent.getService(this, 0, Intent(this, EPubRefreshService::class.java)
                 .setAction(ACTION_ABORT), 0)
@@ -61,9 +55,10 @@ class EPubRefreshService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle(getString(R.string.EpubRefreshTitle))
                 .setContentText(getString(R.string.EPubRefreshInitializing))
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setLargeIcon(BitmapFactory.decodeResource(resources, drawable_icon_app))
-                .addAction(drawable_icon_abort, getString(R.string.EPubRefreshActionAbort), abortIntent)
+                .setSmallIcon(R.drawable.ic_sync_24dp)
+                //.setLargeIcon(BitmapFactory.decodeResource(resources, R.drawable.ic_sync_24dp))
+                .setCategory(Notification.CATEGORY_PROGRESS)
+                .addAction(R.drawable.ic_warning_24dp, getString(R.string.EPubRefreshActionAbort), abortIntent)
                 .setContentIntent(pendingIntent)
                 .setPriority(NotificationManager.IMPORTANCE_LOW)
                 .setWhen(System.currentTimeMillis())
@@ -80,11 +75,12 @@ class EPubRefreshService : Service() {
     // Create the NotificationChannel, but only on API 26+ because
     // the NotificationChannel class is new and not in the support library
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val name = getString(R.string.channel_name)
-        val descriptionText = getString(R.string.channel_description)
-        val importance = NotificationManager.IMPORTANCE_LOW
-        val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
-            description = descriptionText
+        val channel = NotificationChannel(
+                CHANNEL_ID,
+                getString(R.string.channel_name),
+                NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = getString(R.string.channel_description)
             setShowBadge(false)
         }
         // Register the channel with the system
