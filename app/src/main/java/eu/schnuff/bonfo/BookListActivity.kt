@@ -151,7 +151,9 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
 
         if (!EPubContent.isLoaded) {
             book_list_refresh!!.isRefreshing = true
-            EPubContent.loadItems(applicationContext)
+            EPubContent.loadItems(applicationContext) {
+                book_list_refresh!!.isRefreshing = false
+            }
         }
     }
 
