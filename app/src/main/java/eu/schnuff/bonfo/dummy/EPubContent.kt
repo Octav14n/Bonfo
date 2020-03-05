@@ -51,13 +51,13 @@ private val XPATH_META = XPATH.compile("/x:package/x:metadata")
 private val XPATH_ID = XPATH.compile("dc:identifier/text()")
 private val XPATH_TITLE = XPATH.compile("dc:title/text()")
 private val XPATH_AUTHOR = XPATH.compile("dc:creator/text()")
-private val XPATH_FANDOM = XPATH.compile("x:meta[@name='fandom']/@content|dc:subject[not(starts-with(., 'Last Update') or text() = 'FanFiction')]/text()")
+private val XPATH_FANDOM = XPATH.compile("x:meta[@name='fandom']/@content")
 private val XPATH_DESCRIPTION = XPATH.compile("dc:description/text()")
-private val XPATH_GENRES = XPATH.compile("dc:type/text()")
+private val XPATH_GENRES = XPATH.compile("dc:type/text()|dc:subject[not(starts-with(., 'Last Update') or text() = 'FanFiction')]/text()")
 private val XPATH_CHARACTERS = XPATH.compile("x:meta[@name='characters']/@content")
 private val XPATH_OPF_FILE_PATH = XPATH.compile("//cont:rootfile/@full-path[1]")
 private val DOCUMENT_FACTORY = DocumentBuilderFactory.newInstance().apply { isNamespaceAware = true }
-private val UPDATE_INTERVAL_MILLIS = 250
+private const val UPDATE_INTERVAL_MILLIS = 250
 
 object EPubContent {
 
@@ -129,6 +129,7 @@ object EPubContent {
                     }
                 } catch (e: Exception) {
                     Log.d("reading", "error reading", e)
+
                 }
             }
             //}
@@ -216,18 +217,28 @@ object EPubContent {
                 val characters = path(meta, XPATH_CHARACTERS)?.split(", ") ?: Collections.emptyList<String>()
 
                 // Log.d("reading-time", System.nanoTime().toString() + " - build EPubItem")
-                val item = EPubItem(file.absolutePath, file.name, Date(file.lastModified()), file.length(), opfEntry.crc,
-                        id, title, author, fandom, description, genres.toTypedArray(), characters.toTypedArray())
-                // Log.d("reading-time", System.nanoTime().toString() + " - Save EPubItem")
-                if (other != null) {
-                    dao.update(item)
-                } else {
-                    dao.insert(item)
-                }
+
                 // Log.d("reading-time", System.nanoTime().toString() + " - close zip file " + file.name)
-                return item
+                return createItem(other, dao, file.absolutePath, file.name, Date(file.lastModified()),
+                file.length(), opfEntry.crc, id, title, author, fandom, description, genres.toTypedArray(),
+                characters.toTypedArray())
             }
         }
+    }
+
+    private fun createItem(other: EPubItem?, dao: EPubItemDAO, filePath: String, filename: String,
+                           dateLastModified: Date, length: Long, crc: Long, id: String, title: String, author: String?,
+                           fandom: String?, description: String?, genres: Array<String>,
+                           characters: Array<String>): EPubItem {
+        val item = EPubItem(filePath, filename, dateLastModified, length, crc,
+                id, title, author, fandom, description, genres, characters)
+        // Log.d("reading-time", System.nanoTime().toString() + " - Save EPubItem")
+        if (other != null) {
+            dao.update(item)
+        } else {
+            dao.insert(item)
+        }
+        return item
     }
 
     private fun path(node: Node, xPath: XPathExpression, seperator: String = ", "): String? {

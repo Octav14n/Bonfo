@@ -1,4 +1,5 @@
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+                  xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <!-- NOTE: EditTextPreference accepts EditText attributes. -->
     <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->
@@ -9,7 +10,12 @@
             android:layout="@layout/preference_dir_lister" />-->
     <eu.schnuff.bonfo.PreferenceDirLister
             android:key="selected_directories"
-            android:title="@string/pick_diretories"/>
+            android:title="@string/pick_diretories"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout="@layout/preference_dir_lister"/>
+    <!--
+            android:layout_width="match_parent" android:layout_height="match_parent" -->
 
 
     <!-- NOTE: Hide buttons to simplify the UI. Users can touch outside the dialog to

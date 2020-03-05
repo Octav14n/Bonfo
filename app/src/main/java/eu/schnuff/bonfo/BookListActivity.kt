@@ -1,9 +1,7 @@
 package eu.schnuff.bonfo
 
-import android.Manifest
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
 import android.os.StrictMode
@@ -12,14 +10,13 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.SearchView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import eu.schnuff.bonfo.dummy.EPubContent
 import eu.schnuff.bonfo.dummy.Setting
 import eu.schnuff.bonfo.helpers.RFastScroller
+import eu.schnuff.bonfo.helpers.permissionExternalStorageHelper
 import kotlinx.android.synthetic.main.activity_book_list.*
 import kotlinx.android.synthetic.main.book_list.*
 import org.jetbrains.anko.startActivity
@@ -33,7 +30,7 @@ import org.jetbrains.anko.startActivity
  * item description. On tablets, the activity presents the list of items and
  * item description side-by-side using two vertical panes.
  */
-class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
+class BookListActivity : AppCompatActivity() {
 
     /**
      * Whether or not the activity is in two-pane mode, i.e. running on a tablet
@@ -125,13 +122,6 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
         else -> super.onOptionsItemSelected(item)
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        when(requestCode) {
-            PERMISSION_SDCARD -> if (grantResults[0] == PackageManager.PERMISSION_GRANTED) { readEPubsForList() }
-        }
-    }
-
     private fun setupEPubList() {
         EPubContent.filterLarge = Setting.filterLargeFiles
         EPubContent.onListChanged = {
@@ -158,11 +148,8 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
     }
 
     private fun readEPubsForList() {
-        val permission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-        if (permission != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
-                    PERMISSION_SDCARD)
-        } else {
+        permissionExternalStorageHelper(this) {
+            Log.d("main", "got permission, now starting service...")
             book_list_refresh!!.isRefreshing = true
             val intent = Intent(this, EPubRefreshService::class.java)
                     .setAction(EPubRefreshService.ACTION_START)
@@ -177,7 +164,6 @@ class BookListActivity : AppCompatActivity(), ActivityCompat.OnRequestPermission
     }
 
     companion object {
-        const val PERMISSION_SDCARD = 1
         const val SAVED_FILTER = "filter"
         const val SAVED_SCROLL = "scroll"
         const val SAVED_SCROLL_OFFSET = "scroll_offset"

@@ -42,7 +42,7 @@ data class EPubItem(
         }
     }
 
-    val name get() = if (fandom !== null) "$fandom - $title" else fileName
+    val name get() = if (fandom !== null) "$fandom - $title" else title
     override fun toString(): String = name
 
     fun contains(str: String): Boolean {

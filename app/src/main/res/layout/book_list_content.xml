@@ -58,17 +58,18 @@
                         android:layout_height="wrap_content"
                         tools:text="Fantasy, Trash, Sci-Fi"
                         android:textAppearance="@style/TextAppearance.AppCompat.Body1" android:textColor="@color/genres"
-                        android:layout_weight="1"/>
+                        android:layout_weight="1" android:visibility="visible"/>
                 <Space
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" android:layout_weight="1"/>
+                        android:layout_width="@dimen/fab_margin"
+                        android:layout_height="wrap_content" android:layout_weight="0.001"/>
                 <TextView
                         android:id="@+id/size"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         tools:text="2.5 MB"
                         android:textAppearance="@style/TextAppearance.AppCompat.Body1" android:textColor="@color/body1"
-                />
+                        android:layout_weight="0"
+                        android:layout_gravity="bottom"/>
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

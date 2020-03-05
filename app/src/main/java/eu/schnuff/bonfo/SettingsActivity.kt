@@ -1,16 +1,17 @@
 package eu.schnuff.bonfo
 
-import android.app.Activity
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
 
-class SettingsActivity : Activity() {
+class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Display the fragment as the main content.
-        fragmentManager.beginTransaction().replace(android.R.id.content,
-                PreferenceGeneral()).commit()
+        setContentView(R.layout.settings_activity)
+        supportFragmentManager
+                .beginTransaction()
+                .replace(R.id.settings, PreferenceGeneral())
+                .commit()
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
-
 }

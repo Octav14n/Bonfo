@@ -1,13 +1,12 @@
 package eu.schnuff.bonfo
 
 import android.content.Context
-import android.preference.ListPreference
 import android.util.AttributeSet
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ListView
+import androidx.preference.ListPreference
+import androidx.preference.PreferenceViewHolder
 import kotlinx.android.synthetic.main.preference_dir_lister.view.*
 
 class PreferenceDirLister(context: Context, attrs: AttributeSet) : ListPreference(context, attrs) {
@@ -16,21 +15,17 @@ class PreferenceDirLister(context: Context, attrs: AttributeSet) : ListPreferenc
     var dirAdapter: ArrayAdapter<String>? = null
     set(value) {
         field = value
-        if (null != this.listView) {
-            this.listView!!.adapter = value
-        }
+        this.listView?.adapter = value
     }
 
-    override fun onCreateView(parent: ViewGroup): View {
-        super.onCreateView(parent)
-        val li = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        val view = li.inflate(R.layout.preference_dir_lister, parent, false)
-        view.buttonAdd.setOnClickListener {
+    override fun onBindViewHolder(holder: PreferenceViewHolder) {
+        super.onBindViewHolder(holder)
+        holder.itemView.buttonAdd ?: TODO("PreferenceDirLister has no ui.")
+        holder.itemView.buttonAdd.setOnClickListener {
             onAddListener(it)
         }
-        if (null != this.dirAdapter) {
-            view.listContent.adapter = this.dirAdapter
-        }
-        return view
+        listView = holder.itemView.listContent
+        listView!!.adapter = dirAdapter
+        holder.itemView.visibility = View.VISIBLE
     }
 }
